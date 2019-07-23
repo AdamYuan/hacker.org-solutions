@@ -1,5 +1,4 @@
 #define WEBPAGE_FILE "webpage"
-#define POST_FILE "post.html"
 #define CURL_COMMAND_FILE "curl_cmd.sh"
 #define USER "Username"
 #define PASS "Password"

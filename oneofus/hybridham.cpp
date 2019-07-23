@@ -26,11 +26,10 @@ std::mt19937 mtgen{ std::random_device{}() };
 
 inline void GreedyDfs(Graph::Node *cur, Path &path)
 {
-	cur->vis = true;
 	Graph::Node *to = nullptr;
 	for(Graph::Node *nei : cur->to)
 	{
-		if(nei->vis) continue;
+		if(path.Exist(nei)) continue;
 		if(mtgen() % 1000 == 0) continue;
 		to = nei;
 		break;
@@ -50,7 +49,6 @@ inline void GenerateInitialPath(Path &path, Path &tmp)
 	for(auto &cur : graph.GetNodes())
 	{
 		if(cur.degree != max_deg) continue;
-		graph.ResetVis();
 
 		tmp.Clear();
 		tmp.PushInitial(&cur);
@@ -58,12 +56,6 @@ inline void GenerateInitialPath(Path &path, Path &tmp)
 		if(tmp.Size() > path.Size() || (tmp.Size() == path.Size() && (mtgen() & 1)))
 			path = std::move(tmp);
 	}
-
-	//set visit info
-	static std::vector<Graph::Node *> ordered_vec;
-	path.GetOrderedVec(ordered_vec);
-	for(Graph::Node *cur : ordered_vec)
-		cur->vis = true;
 }
 
 inline bool RotationalTransform(Path &path)
@@ -75,8 +67,7 @@ inline bool RotationalTransform(Path &path)
 	static std::vector<Graph::Node *> neis;
 	neis.clear();
 	for(Graph::Node *nei : path.Back()->to)
-		if(path.Exist(nei))
-			neis.push_back(nei);
+		if(path.Exist(nei)) neis.push_back(nei);
 
 	if(neis.empty()) return false;
 

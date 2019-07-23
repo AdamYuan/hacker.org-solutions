@@ -22,8 +22,7 @@
 PageParser pp;
 Graph graph;
 
-std::random_device rd{};
-std::mt19937 mtgen{ rd() };
+std::mt19937 mtgen{ std::random_device{}() };
 
 inline void GreedyDfs(Graph::Node *cur, Path &path)
 {
@@ -44,8 +43,6 @@ inline void GreedyDfs(Graph::Node *cur, Path &path)
 
 inline void GenerateInitialPath(Path &path, Path &tmp)
 {
-	path.Clear();
-
 	int max_deg = 0;
 	for(auto &cur : graph.GetNodes())
 		max_deg = std::max(cur.degree, max_deg);
@@ -63,7 +60,7 @@ inline void GenerateInitialPath(Path &path, Path &tmp)
 	}
 
 	//set visit info
-	std::vector<Graph::Node *> ordered_vec;
+	static std::vector<Graph::Node *> ordered_vec;
 	path.GetOrderedVec(ordered_vec);
 	for(Graph::Node *cur : ordered_vec)
 		cur->vis = true;
@@ -75,7 +72,8 @@ inline bool RotationalTransform(Path &path)
 	   || (path.Front()->degree == path.Back()->degree && (mtgen() & 1)))
 		path.Reverse();
 
-	std::vector<Graph::Node *> neis;
+	static std::vector<Graph::Node *> neis;
+	neis.clear();
 	for(Graph::Node *nei : path.Back()->to)
 		if(path.Exist(nei))
 			neis.push_back(nei);
@@ -144,7 +142,6 @@ int main()
 	auto time_start = std::chrono::steady_clock::now();
 	Path path = HybridHam();
 	auto time_end = std::chrono::steady_clock::now();
-
 	std::chrono::milliseconds time_lasted = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start);
 
 	std::string sol = ConstructSolution(path);

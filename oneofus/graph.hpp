@@ -114,12 +114,18 @@ class Path
 			splay_root = nullptr;
 			path_size = 0;
 		}
-		Path( const Graph &graph)
+		Path( const Graph &graph )
 		{
 			nodes_begin_ptr = graph.nodes.data();
 			nodes_size = graph.nodes.size();
 			Clear();
 		}
+		//delete copy behaviours
+		Path( const Path & ) = delete;
+		Path &operator = ( const Path & ) = delete;
+		Path( Path && ) noexcept = default;
+		Path &operator = ( Path && ) noexcept = default;
+
 		inline void PushInitial(Graph::Node *cur)
 		{
 			splay_root = new_splay(cur);

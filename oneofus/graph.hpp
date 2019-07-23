@@ -7,17 +7,24 @@
 
 class Graph
 {
-	friend class Path;
 	public:
-	struct Node { std::vector<Node *> to; int degree; bool vis; };
+		struct Node { std::vector<Node *> to; int degree; bool vis; };
 	private:
-	std::vector<Node> nodes;
-	inline void add_edge( Node *u, Node *v ) { u->to.push_back(v); u->degree ++; }
+		std::vector<Node> nodes;
+		inline void add_edge( Node *u, Node *v ) { u->to.push_back(v); u->degree ++; }
 	public:
-	std::vector<Node> &GetNodes() { return nodes; }
-	inline void Construct(const PageParser &pp);
-	inline const PageParser::Node &GetNodeInfo(const PageParser &pp, const Node *cur) { return pp.GetBoard( cur - nodes.data() ); }
-	inline void ResetVis() { for(Node &cur : nodes) cur.vis = false; }
+		//delete copy behaviours
+		Graph() = default;
+		Graph( const Graph & ) = delete;
+		Graph &operator = ( const Graph & ) = delete;
+		Graph( Graph && ) noexcept = default;
+		Graph &operator = ( Graph && ) noexcept = default;
+		std::vector<Node> &GetNodes() { return nodes; }
+		inline void Construct(const PageParser &pp);
+		inline const PageParser::Node &GetNodeInfo(const PageParser &pp, const Node *cur) { return pp.GetBoard( cur - nodes.data() ); }
+		inline void ResetVis() { for(Node &cur : nodes) cur.vis = false; }
+
+		friend class Path;
 };
 
 inline void Graph::Construct( const PageParser &pp )
@@ -100,17 +107,18 @@ class Path
 			inline Splay *back() { pushdown(); return rson ? rson->back() : this; }
 			inline Splay *front() { pushdown(); return lson ? lson->front() : this; }
 		};
-		std::vector<Splay> splays; Splay *splay_cur, *splay_root;
-		std::vector<Splay *> link;
 		inline Splay *new_splay( Graph::Node *ptr ) 
-		{ splay_cur->ptr = ptr; splay_cur->rev_tag = false; splay_cur->parent = splay_cur->lson = splay_cur->rson = nullptr; return splay_cur ++; }
+		{ 
+			Splay *spl = splay_pool.data() + (ptr - nodes_begin_ptr);
+			spl->ptr = ptr; spl->lson = spl->rson = spl->parent = nullptr;
+			return spl;
+		}
+		std::vector<Splay> splay_pool; Splay *splay_root;
 
 	public:
 		inline void Clear()
 		{ 
-			link = std::vector<Splay *>(nodes_size);
-			splays = std::vector<Splay>(nodes_size);
-			splay_cur = splays.data();
+			splay_pool = std::vector<Splay>(nodes_size);
 			splay_root = nullptr;
 			path_size = 0;
 		}
@@ -129,7 +137,6 @@ class Path
 		inline void PushInitial(Graph::Node *cur)
 		{
 			splay_root = new_splay(cur);
-			link[cur - nodes_begin_ptr] = splay_root;
 			++path_size;
 		}
 		inline void PushBack(Graph::Node *cur)
@@ -137,13 +144,12 @@ class Path
 			Splay *spl = new_splay(cur);
 			splay_root->pushback(spl);
 			spl->splay(splay_root);
-			link[cur - nodes_begin_ptr] = splay_root;
 			++path_size;
 		}
-		inline bool Exist(Graph::Node *cur) const { return link[ cur - nodes_begin_ptr ]; }
+		inline bool Exist(Graph::Node *cur) const { return splay_pool[ cur - nodes_begin_ptr ].ptr; }
 		inline void Reverse() { splay_root->reverse(); }
-		inline void Reverse(Graph::Node *cur) {
-			link[cur - nodes_begin_ptr]->splay(splay_root);
+		inline void Reverse(Graph::Node *cur) { //reverses sequence after cur
+			splay_pool[ cur - nodes_begin_ptr ].splay(splay_root);
 			if(splay_root->rson) splay_root->rson->reverse();
 		}
 		inline void GetOrderedVec(std::vector<Graph::Node *> &vec) const 
